@@ -12,7 +12,7 @@ Raspberry Pi GPIO GarageDoor plugin for [HomeBridge](https://github.com/nfarina/
   2. Install homebridge using: npm install -g homebridge
   3. Install this plugin using: npm install -g homebridge-rasppi-gpio-garagedoor
   4. Update your configuration file. See sample-config.json snippet below. 
-  5. Set up Homebridge to start automatically after reboot
+  5. Set up Homebridge to start automatically after reboot  
     a. Copying the [homebridge start script](https://raw.githubusercontent.com/benlamonica/homebridge-rasppi-gpio-garagedoor/master/scripts/homebridge) into your ```/etc/init.d``` directory.  
     b. Modify the file to start homebridge with the .homebridge directory and user that you want. Make sure that the user you are choosing to run Homebridge as has access to write to GPIO pins. On my version of Raspbian, Homebridge has to run as ```root```.   
     c. ```chmod 755 /etc/init.d/homebridge```  
