@@ -1,4 +1,5 @@
 var fs = require("fs");
+var wpi = require('wiring-pi');
 var Service, Characteristic, DoorState; // set in the module.exports, from homebridge
 
 module.exports = function(homebridge) {
@@ -16,6 +17,9 @@ function RaspPiGPIOGarageDoorAccessory(log, config) {
   this.doorSensorPin = config["doorSensorPin"];
   this.doorPollInMs = config["doorPollInMs"];
   this.doorOpensInSeconds = config["doorOpensInSeconds"];
+  this.relayOn = 0;
+  this.relayOff = 1;
+  this.sensorClosed = 0;
   log("Door Switch Pin: " + this.doorSwitchPin);
   log("Door Sensor Pin: " + this.doorSensorPin);
   log("Door Poll in ms: " + this.doorPollInMs);
@@ -42,6 +46,10 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
   },
 
   initService: function() {
+    wpi.setup('phys');
+    wpi.pinMode(this.doorSwitchPin, wpi.OUTPUT);
+    wpi.digitalWrite(this.doorSwitchPin, this.relayOff);
+
     this.garageDoorOpener = new Service.GarageDoorOpener(this.name,this.name);
     this.currentDoorState = this.garageDoorOpener.getCharacteristic(DoorState);
     this.currentDoorState.on('get', this.getState.bind(this));
@@ -67,11 +75,11 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
   },
 
   isClosed: function() {
-    return fs.readFileSync("/sys/class/gpio/gpio"+this.doorSensorPin+"/value", "utf8").trim() == "1";
+    return wpi.digitalRead(12) == this.sensorClosed;
   },
 
   switchOff: function() {
-    fs.writeFileSync("/sys/class/gpio/gpio"+this.doorSwitchPin+"/value", "0");
+    wpi.digitalWrite(this.doorSwitchPin, this.relayOff);
     this.log("Turning off GarageDoor Relay");
   },
 
@@ -100,7 +108,7 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
             this.currentDoorState.setValue(DoorState.CLOSING);
         }
         setTimeout(this.setFinalDoorState.bind(this), this.doorOpensInSeconds * 1000);
-        fs.writeFileSync("/sys/class/gpio/gpio"+this.doorSwitchPin+"/value", "1");
+        wpi.digitalWrite(this.doorSwitchPin, this.relayOn);
         setTimeout(this.switchOff.bind(this), 1000);
     }
 
