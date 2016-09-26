@@ -17,9 +17,9 @@ function RaspPiGPIOGarageDoorAccessory(log, config) {
   this.doorSensorPin = config["doorSensorPin"];
   this.doorPollInMs = config["doorPollInMs"];
   this.doorOpensInSeconds = config["doorOpensInSeconds"];
-  this.relayOn = 0;
-  this.relayOff = 1;
-  this.sensorClosed = 0;
+  this.relayOn = config["relayOnValue"]; //define value for on (0/1)
+  this.relayOff = 1-this.relay; //opposite of relayOn (O/1)
+  this.sensorClosed = config["sensorClosedValue"]; //define value for boolean On;
   log("Door Switch Pin: " + this.doorSwitchPin);
   log("Door Sensor Pin: " + this.doorSensorPin);
   log("Door Poll in ms: " + this.doorPollInMs);
@@ -49,6 +49,11 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
     wpi.setup('phys');
     wpi.pinMode(this.doorSwitchPin, wpi.OUTPUT);
     wpi.digitalWrite(this.doorSwitchPin, this.relayOff);
+	
+	wpi.pinMode(this.doorSensorPin, wpi.INPUT);
+	wpi.pullUpDnControl(this.doorSensorPin, wpi.PUD_UP);
+	
+	
 
     this.garageDoorOpener = new Service.GarageDoorOpener(this.name,this.name);
     this.currentDoorState = this.garageDoorOpener.getCharacteristic(DoorState);
@@ -75,7 +80,7 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
   },
 
   isClosed: function() {
-    return wpi.digitalRead(12) == this.sensorClosed;
+    return wpi.digitalRead(this.doorSensorPin) == this.sensorClosed;
   },
 
   switchOff: function() {
