@@ -1,4 +1,5 @@
 var fs = require("fs");
+var wpi = require('wiring-pi');
 var Service, Characteristic, DoorState; // set in the module.exports, from homebridge
 
 module.exports = function(homebridge) {
@@ -16,6 +17,10 @@ function RaspPiGPIOGarageDoorAccessory(log, config) {
   this.doorSensorPin = config["doorSensorPin"];
   this.doorPollInMs = config["doorPollInMs"];
   this.doorOpensInSeconds = config["doorOpensInSeconds"];
+  this.doorClosesInSeconds = config["doorClosesInSeconds"];
+  this.relayOn = config["relayOnValue"]; //define value for on (0/1)
+  this.relayOff = 1-this.relayOn; //opposite of relayOn (O/1)
+  this.sensorClosed = config["sensorClosedValue"]; //define value for boolean On;
   log("Door Switch Pin: " + this.doorSwitchPin);
   log("Door Sensor Pin: " + this.doorSensorPin);
   log("Door Poll in ms: " + this.doorPollInMs);
@@ -26,22 +31,52 @@ function RaspPiGPIOGarageDoorAccessory(log, config) {
 
 RaspPiGPIOGarageDoorAccessory.prototype = {
 
+  // monitorDoorState: function() {
+  //    var isClosed = this.isClosed();
+  //    if (isClosed != this.wasClosed) {
+  //      this.wasClosed = isClosed;
+  //      var state = isClosed ? DoorState.CLOSED : DoorState.OPEN;
+  //      this.log("Door state changed to " + (isClosed ? "CLOSED" : "OPEN"));
+  //      if (!this.operating) {
+  //        this.currentDoorState.setValue(state);
+  //        this.targetDoorState.setValue(state);
+  //        this.targetState = state;
+  //      }
+  //    }
+  //    setTimeout(this.monitorDoorState.bind(this), this.doorPollInMs);
+  // },
+  
   monitorDoorState: function() {
      var isClosed = this.isClosed();
+	 
+	 // if it's opening, show that and schedule a time to go back and check/update.
+	 // if it's closing, show that and schedule a time to go back and check/update.
+	 
+	 // status change detected
      if (isClosed != this.wasClosed) {
        this.wasClosed = isClosed;
-       var state = isClosed ? DoorState.CLOSED : DoorState.OPEN;       
+	   var state = isClosed ? DoorState.CLOSED : DoorState.OPEN;
        this.log("Door state changed to " + (isClosed ? "CLOSED" : "OPEN"));
+	   
        if (!this.operating) {
+		 this.log("--------Setting states to " + state);
          this.currentDoorState.setValue(state);
          this.targetDoorState.setValue(state);
          this.targetState = state;
+		 
        }
      }
+	 
      setTimeout(this.monitorDoorState.bind(this), this.doorPollInMs);
   },
+  
 
   initService: function() {
+    wpi.setup('phys');
+    wpi.pinMode(this.doorSwitchPin, wpi.OUTPUT);
+	this.switchOff();	
+	wpi.pinMode(this.doorSensorPin, wpi.INPUT);
+	
     this.garageDoorOpener = new Service.GarageDoorOpener(this.name,this.name);
     this.currentDoorState = this.garageDoorOpener.getCharacteristic(DoorState);
     this.currentDoorState.on('get', this.getState.bind(this));
@@ -67,40 +102,64 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
   },
 
   isClosed: function() {
-    return fs.readFileSync("/sys/class/gpio/gpio"+this.doorSensorPin+"/value", "utf8").trim() == "1";
+    var isClosed = wpi.digitalRead(this.doorSensorPin) == this.sensorClosed;
+	//this.log("isClosed: " + isClosed);
+	return isClosed;
   },
 
   switchOff: function() {
-    fs.writeFileSync("/sys/class/gpio/gpio"+this.doorSwitchPin+"/value", "0");
-    this.log("Turning off GarageDoor Relay");
+    wpi.digitalWrite(this.doorSwitchPin, this.relayOff);
+    this.log("Turning GarageDoor Relay Off");
   },
 
+  switchOn: function() {
+    wpi.digitalWrite(this.doorSwitchPin, this.relayOn);
+    this.log("Turning GarageDoor Relay On");
+  },
+
+  // setFinalDoorState: function() {
+  //   var isClosed = this.isClosed();
+  //   if ((this.targetState == DoorState.CLOSED && !isClosed) || (this.targetState == DoorState.OPEN && isClosed)) {
+  //     this.log("Was trying to " + (this.targetState == DoorState.CLOSED ? " CLOSE " : " OPEN ") + "the door, but it is still " + (isClosed ? "CLOSED":"OPEN"));
+  //     this.currentDoorState.setValue(DoorState.STOPPED);
+  //     this.targetDoorState.setValue(isClosed ? DoorState.CLOSED : DoorState.OPEN);
+  //   } else {
+  //     this.currentDoorState.setValue(this.targetState);
+  //   }
+  //   this.operating = false;
+  // },
+  
   setFinalDoorState: function() {
     var isClosed = this.isClosed();
-    if ((this.targetState == DoorState.CLOSED && !isClosed) || (this.targetState == DoorState.OPEN && isClosed)) {
-      this.log("Was trying to " + (this.targetState == DoorState.CLOSED ? " CLOSE " : " OPEN ") + "the door, but it is still " + (isClosed ? "CLOSED":"OPEN"));
-      this.currentDoorState.setValue(DoorState.STOPPED);
-      this.targetDoorState.setValue(isClosed ? DoorState.CLOSED : DoorState.OPEN);
-    } else {
+    if ((this.targetState == DoorState.CLOSED && isClosed) || (this.targetState == DoorState.OPEN && !isClosed)) {
+      this.log("It appears that the door is now " + (isClosed ? "CLOSED":"OPEN"));
+	  this.log("Updating current state to" + this.targetState);
       this.currentDoorState.setValue(this.targetState);
+      this.targetDoorState.setValue(isClosed ? DoorState.CLOSED : DoorState.OPEN);
     }
-    this.operating = false;
+	this.operating = false;
+	this.log("-------setFinalDoorState Called-------");
   },
 
   setState: function(state, callback) {
     this.log("Setting state to " + state);
+	this.log("Current State appears to be " + this.targetState);
     this.targetState = state;
     var isClosed = this.isClosed();
     if ((state == DoorState.OPEN && isClosed) || (state == DoorState.CLOSED && !isClosed)) {
         this.log("Triggering GarageDoor Relay");
         this.operating = true; 
         if (state == DoorState.OPEN) {
-            this.currentDoorState.setValue(DoorState.OPENING);
+			this.log("Opening Door");
+            //this.currentDoorState.setValue(DoorState.OPENING);
+			setTimeout(this.setFinalDoorState.bind(this), this.doorOpensInSeconds * 1000);
         } else {
-            this.currentDoorState.setValue(DoorState.CLOSING);
+			this.log("Closing Door");
+            //this.currentDoorState.setValue(DoorState.CLOSING); //setting currentstate here fires an incorrect notification, rely on the finalDoorState
+			setTimeout(this.setFinalDoorState.bind(this), this.doorClosesInSeconds * 1000);
         }
-        setTimeout(this.setFinalDoorState.bind(this), this.doorOpensInSeconds * 1000);
-        fs.writeFileSync("/sys/class/gpio/gpio"+this.doorSwitchPin+"/value", "1");
+		
+		this.switchOn();
         setTimeout(this.switchOff.bind(this), 1000);
     }
 
