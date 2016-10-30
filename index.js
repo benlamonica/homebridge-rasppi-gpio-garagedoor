@@ -73,12 +73,9 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
   },
 
   switchOff: function() {
-    if (this.doorSwitchInverted)
-    {
+    if (this.doorSwitchInverted){
        fs.writeFileSync("/sys/class/gpio/gpio"+this.doorSwitchPin+"/value", "1");
-    }
-    else
-    {
+    } else {
        fs.writeFileSync("/sys/class/gpio/gpio"+this.doorSwitchPin+"/value", "0");
     }
     this.log("Turning off GarageDoor Relay");
@@ -109,12 +106,9 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
             this.currentDoorState.setValue(DoorState.CLOSING);
         }
         setTimeout(this.setFinalDoorState.bind(this), this.doorOpensInSeconds * 1000);
-      if (this.doorSwitchInverted)
-      {
+      if (this.doorSwitchInverted) {
         fs.writeFileSync("/sys/class/gpio/gpio"+this.doorSwitchPin+"/value", "0");
-      }
-      else
-      {
+      } else {
         fs.writeFileSync("/sys/class/gpio/gpio"+this.doorSwitchPin+"/value", "1");
       }
         setTimeout(this.switchOff.bind(this), 1000);
