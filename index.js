@@ -13,10 +13,12 @@ function RaspPiGPIOGarageDoorAccessory(log, config) {
   this.log = log;
   this.name = config["name"];
   this.doorSwitchPin = config["doorSwitchPin"];
+  this.doorSwitchInverted = config["doorSwitchInverted"];
   this.doorSensorPin = config["doorSensorPin"];
   this.doorPollInMs = config["doorPollInMs"];
   this.doorOpensInSeconds = config["doorOpensInSeconds"];
   log("Door Switch Pin: " + this.doorSwitchPin);
+  log("Door Switch Inverted: " + this.doorSwitchInverted);
   log("Door Sensor Pin: " + this.doorSensorPin);
   log("Door Poll in ms: " + this.doorPollInMs);
   log("Door Opens in seconds: " + this.doorOpensInSeconds);
@@ -71,7 +73,14 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
   },
 
   switchOff: function() {
-    fs.writeFileSync("/sys/class/gpio/gpio"+this.doorSwitchPin+"/value", "0");
+    if (this.doorSwitchInverted)
+    {
+       fs.writeFileSync("/sys/class/gpio/gpio"+this.doorSwitchPin+"/value", "1");
+    }
+    else
+    {
+       fs.writeFileSync("/sys/class/gpio/gpio"+this.doorSwitchPin+"/value", "0");
+    }
     this.log("Turning off GarageDoor Relay");
   },
 
@@ -100,7 +109,14 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
             this.currentDoorState.setValue(DoorState.CLOSING);
         }
         setTimeout(this.setFinalDoorState.bind(this), this.doorOpensInSeconds * 1000);
+      if (this.doorSwitchInverted)
+      {
+        fs.writeFileSync("/sys/class/gpio/gpio"+this.doorSwitchPin+"/value", "0");
+      }
+      else
+      {
         fs.writeFileSync("/sys/class/gpio/gpio"+this.doorSwitchPin+"/value", "1");
+      }
         setTimeout(this.switchOff.bind(this), 1000);
     }
 
