@@ -30,7 +30,7 @@ Configuration sample:
             "accessory": "RaspPiGPIOGarageDoor",
             "name": "Garage Door",
             "doorSwitchPin": 23,
-            "doorSwitchInverted": TRUE,
+            "doorSwitchInverted": true,
             "doorSensorPin": 24,
             "doorPollInMs": 4000,
             "doorOpensInSeconds": 14
