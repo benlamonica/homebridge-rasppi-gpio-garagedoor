@@ -30,6 +30,7 @@ Configuration sample:
             "accessory": "RaspPiGPIOGarageDoor",
             "name": "Garage Door",
             "doorSwitchPin": 23,
+            "doorSwitchInverted": true,
             "doorSensorPin": 24,
             "doorPollInMs": 4000,
             "doorOpensInSeconds": 14
@@ -41,6 +42,7 @@ Fields:
 
 * "name": Can be anything (required)
 * "doorSwitchPin": The GPIO pin that controls the relay to trigger the garage door
+* "doorSwitchPin": The GPIO pin that controls the relay to trigger the garage door is inverted (low = ON, high = OFF)
 * "doorSensorPin": The GPIO pin that senses if the door is closed (Closed = HIGH, Open = LOW)
 * "doorPollInMs": Number of milliseconds to wait before polling the doorSensorPin to report if the door is open or closed
 * "doorOpensInSeconds": Number of seconds it takes your garage door to open or close (err on the side of being longer than it actually takes)
