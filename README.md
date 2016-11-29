@@ -30,7 +30,12 @@ Configuration sample:
             "accessory": "RaspPiGPIOGarageDoor",
             "name": "Garage Door",
             "doorSwitchPin": 23,
-            "doorSensorPin": 24,
+            "doorSwitchPressTimeInMs": 1000,
+            "doorSwitchValue": 1,
+            "closedDoorSensorPin": 24,
+            "closedDoorSensorValue": 1,
+            "openDoorSensorPin": 25,
+            "openDoorSensorValue": 1,
             "doorPollInMs": 4000,
             "doorOpensInSeconds": 14
         }
@@ -39,10 +44,15 @@ Configuration sample:
 
 Fields: 
 
-* "name": Can be anything (required)
-* "doorSwitchPin": The GPIO pin that controls the relay to trigger the garage door
-* "doorSensorPin": The GPIO pin that senses if the door is closed (Closed = HIGH, Open = LOW)
-* "doorPollInMs": Number of milliseconds to wait before polling the doorSensorPin to report if the door is open or closed
-* "doorOpensInSeconds": Number of seconds it takes your garage door to open or close (err on the side of being longer than it actually takes)
+* name - Can be anything (required)
+* doorSwitchPin - The physical GPIO pin number that controls the relay to trigger the garage door
+* doorSwitchPressTimeInMs - number of milliseconds to trigger the garage door button. defaults to 1000 millseconds (1 second) if not specified
+* doorSwitchValue - 1 = ACTIVE_HIGH, 0 = ACTIVE_LOW, defaults to 1 if not specified. Set to 0 if you have a relay that requires the signal to be 0v to trigger.
+* closedDoorSensorPin - The physical GPIO pin that senses if the door is closed
+* closedDoorSensorValue - 1 = ACTIVE_HIGH, 0 = ACTIVE_LOW, defaults to 1 if not specified
+* openDoorSensorPin - The physical GPIO pin that senses if the door is open
+* openDoorSensorValue - 1 = ACTIVE_HIGH, 0 = ACTIVE_LOW, defaults to 1 if not specified
+* doorPollInMs - Number of milliseconds to wait before polling the doorSensorPin to report if the door is open or closed
+* doorOpensInSeconds - Number of seconds it takes your garage door to open or close (err on the side of being longer than it actually takes)
 
 

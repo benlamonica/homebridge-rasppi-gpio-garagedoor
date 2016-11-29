@@ -29,8 +29,8 @@ function RaspPiGPIOGarageDoorAccessory(log, config) {
   this.name = config["name"];
   this.doorSwitchPin = config["doorSwitchPin"];
   this.doorSwitchPressTimeInMs = getVal(config, "doorSwitchPressTimeInMs", 1000);
-  this.doorClosedSensorPin = config["doorClosedSensorPin"];
-  this.doorOpenSensorPin = config["doorOpenSensorPin"];
+  this.closedDoorSensorPin = getVal(config, "closedDoorSensorPin", config["doorSensorPin"]);
+  this.openDoorSensorPin = config["openDoorSensorPin"];
   this.sensorPollInMs = getVal(config, "doorPollInMs", 4000);
   this.doorOpensInSeconds = config["doorOpensInSeconds"];
   this.closedDoorSensorValue = getVal(config, "closedDoorSensorValue", 1);
@@ -38,8 +38,28 @@ function RaspPiGPIOGarageDoorAccessory(log, config) {
   this.relayOn = getVal(config, "relayOnValue", 1);
   this.relayOff = 1-this.relayOn; //opposite of relayOn (O/1)
   log("Door Switch Pin: " + this.doorSwitchPin);
-  log("Door Closed Sensor Pin: " + this.doorClosedSensorPin);
-  log("Door Open Sensor Pin: " + this.doorOpenSensorPin);
+  log("Door Switch Val: " + (this.relayOn == 1 ? "ACTIVE_HIGH" : "ACTIVE_LOW"));
+  log("Door Switch Active Time in ms: " + this.doorSwitchPressTimeInMs);
+
+  if (this.hasClosedSensor()) {
+      log("Door Closed Sensor: Configured");
+      log("    Door Closed Sensor Pin: " + this.closedDoorSensorPin);
+      log("    Door Closed Sensor Val: " + this.closedDoorSensorValue == 1 ? "ACTIVE_HIGH" : "ACTIVE_LOW");
+  } else {
+      log("Door Closed Sensor: Not Configured");
+  }
+
+  if(this.hasOpenSensor()) {
+      log("Door Open Sensor: Configured");
+      log("    Door Open Sensor Pin: " + this.openDoorSensorPin);
+      log("    Door Open Sensor Val: " + this.openDoorSensorValue == 1 ? "ACTIVE_HIGH" : "ACTIVE_LOW);
+  } else {
+      log("Door Open Sensor: Not Configured");
+  }
+
+  if (!this.hasClosedSensor() && !this.hasOpenSensor()) {
+      log("NOTE: Neither Open nor Closed sensor is configured. Will be unable to determine what state the garage door is in, and will rely on last known state.");
+  }
   log("Sensor Poll in ms: " + this.sensorPollInMs);
   log("Door Opens in seconds: " + this.doorOpensInSeconds);
   this.initService();
@@ -67,11 +87,11 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
   },
 
   hasOpenSensor : function() {
-    return this.doorOpenSensorPin != null;
+    return this.openDoorSensorPin != null;
   },
 
   hasClosedSensor : function() {
-    return this.doorClosedSensorPin != null;
+    return this.closedDoorSensorPin != null;
   },
 
   initService: function() {
@@ -112,26 +132,28 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
 
   isClosed: function() {
     if (this.hasClosedSensor()) {
-        this.log("Checking pin value");
-        return this.readPin(this.doorClosedSensorPin) == this.closedDoorSensorValue;
+        return this.readPin(this.closedDoorSensorPin) == this.closedDoorSensorValue;
+    } else if (this.hasOpenSensor()) {
+        return !this.isOpen();
     } else {
-	this.log("just getting state.");
         return this.currentDoorState.getValue() == DoorState.CLOSED;
     }
   },
 
   isOpen: function() {
     if (this.hasOpenSensor()) {
-        return this.readPin(this.doorOpenSensorPin) == this.openDoorSensorValue;
-    } else {
+        return this.readPin(this.closedDoorSensorPin) == this.closedDoorSensorValue;
+    } else if (this.hasClosedSensor()) {
         return !this.isClosed();
+    } else {
+        return this.currentDoorState.getValue() == DoorState.OPEN;
     }
   },
 
   switchOn: function() {
     this.writePin(this.doorSwitchPin, this.relayOn);
-    setTimeout(this.switchOff.bind(this), this.doorSwitchPressTimeInMs);
     this.log("Turning on GarageDoor Relay, pin " + this.doorSwitchPin + " = " + this.relayOn);
+    setTimeout(this.switchOff.bind(this), this.doorSwitchPressTimeInMs);
   },
 
   switchOff: function() {
@@ -181,8 +203,10 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
 
   getState: function(callback) {
     var isClosed = this.isClosed();
-    this.log("GarageDoor is " + (isClosed ? "CLOSED ("+DoorState.CLOSED+")" : "OPEN ("+DoorState.OPEN+")")); 
-    callback(null, (isClosed ? DoorState.CLOSED : DoorState.OPEN));
+    var isOpen = this.isOpen();
+    var state = isClosed ? DoorState.CLOSED : isOpen ? DoorState.OPEN : DoorState.STOPPED;
+    this.log("GarageDoor is " + (isClosed ? "CLOSED ("+DoorState.CLOSED+")" : isOpen ? "OPEN ("+DoorState.OPEN+")" : "STOPPED (" + DoorState.STOPPED + ")")); 
+    callback(null, state);
   },
 
   getServices: function() {
