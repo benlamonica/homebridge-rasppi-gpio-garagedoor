@@ -44,7 +44,7 @@ function RaspPiGPIOGarageDoorAccessory(log, config) {
   if (this.hasClosedSensor()) {
       log("Door Closed Sensor: Configured");
       log("    Door Closed Sensor Pin: " + this.closedDoorSensorPin);
-      log("    Door Closed Sensor Val: " + this.closedDoorSensorValue == 1 ? "ACTIVE_HIGH" : "ACTIVE_LOW");
+      log("    Door Closed Sensor Val: " + (this.closedDoorSensorValue == 1 ? "ACTIVE_HIGH" : "ACTIVE_LOW"));
   } else {
       log("Door Closed Sensor: Not Configured");
   }
@@ -52,7 +52,7 @@ function RaspPiGPIOGarageDoorAccessory(log, config) {
   if(this.hasOpenSensor()) {
       log("Door Open Sensor: Configured");
       log("    Door Open Sensor Pin: " + this.openDoorSensorPin);
-      log("    Door Open Sensor Val: " + this.openDoorSensorValue == 1 ? "ACTIVE_HIGH" : "ACTIVE_LOW);
+      log("    Door Open Sensor Val: " + (this.openDoorSensorValue == 1 ? "ACTIVE_HIGH" : "ACTIVE_LOW"));
   } else {
       log("Door Open Sensor: Not Configured");
   }
@@ -69,15 +69,12 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
 
   monitorDoorState: function() {
      var isClosed = this.isClosed();
-     //this.log("isClosed = " + isClosed + ", wasClosed = " + this.wasClosed);
      var isOpen = this.isOpen();
-     //this.log("isOpen = " + isOpen);
      if (isClosed != this.wasClosed) {
-       this.wasClosed = isClosed;
-       var state = isClosed ? DoorState.CLOSED : DoorState.OPEN;       
-       this.log("Door state changed to " + (isClosed ? "CLOSED" : "OPEN"));
+       var state = isClosed ? DoorState.CLOSED : ((this.hasOpenSensor() && isOpen) ? DoorState.OPEN : DoorState.STOPPED);       
        if (!this.operating) {
-         this.log("setting state to " + state);
+         this.log("Door state changed to " + (isClosed ? "CLOSED" : ((isOpen && this.hasOpenSensor()) ? "OPEN" : "STOPPED")));
+         this.wasClosed = isClosed;
          this.currentDoorState.setValue(state);
          this.targetDoorState.setValue(state);
          this.targetState = state;
@@ -164,12 +161,12 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
   setFinalDoorState: function() {
     var isClosed = this.isClosed();
     var isOpen = this.isOpen();
-    if ((hasClosedSensor() && this.targetState == DoorState.CLOSED && !isClosed) || (hasOpenSensor() && this.targetState == DoorState.OPEN && !isOpen)) {
-      this.log("Was trying to " + (this.targetState == DoorState.CLOSED ? " CLOSE " : " OPEN ") + "the door, but it is still " + (isClosed ? "CLOSED":"OPEN"));
+    if ((this.hasClosedSensor() && this.targetState == DoorState.CLOSED && !isClosed) || (this.hasOpenSensor() && this.targetState == DoorState.OPEN && !isOpen)) {
+      this.log("Was trying to " + (this.targetState == DoorState.CLOSED ? "CLOSE" : "OPEN") + " the door, but it is still " + (isClosed ? "CLOSED":"OPEN"));
       this.currentDoorState.setValue(DoorState.STOPPED);
       this.targetDoorState.setValue(isClosed ? DoorState.CLOSED : DoorState.OPEN);
     } else {
-      this.log("Set current state to " + this.targetState == DoorState.CLOSED ? "CLOSED" : "OPEN");
+      this.log("Set current state to " + (this.targetState == DoorState.CLOSED ? "CLOSED" : "OPEN"));
       this.currentDoorState.setValue(this.targetState);
       this.targetDoorState.setValue(this.targetState);
     }
@@ -182,18 +179,13 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
     var isClosed = this.isClosed();
     if ((state == DoorState.OPEN && isClosed) || (state == DoorState.CLOSED && !isClosed)) {
         this.log("Triggering GarageDoor Relay");
-        this.operating = true; 
+        this.operating = true;
         if (state == DoorState.OPEN) {
             this.currentDoorState.setValue(DoorState.OPENING);
-            if (!this.hasOpenSensor) {
-                setTimeout(this.setFinalDoorState.bind(this), this.doorOpensInSeconds * 1000);
-            }
         } else {
             this.currentDoorState.setValue(DoorState.CLOSING);
-            if (!this.hasClosedSensor) {
-                setTimeout(this.setFinalDoorState.bind(this), this.doorOpensInSeconds * 1000);
-            }
         }
+	setTimeout(this.setFinalDoorState.bind(this), this.doorOpensInSeconds * 1000);
 	this.switchOn();
     }
 
