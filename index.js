@@ -76,7 +76,6 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
          this.log("Door state changed to " + (isClosed ? "CLOSED" : ((isOpen && this.hasOpenSensor()) ? "OPEN" : "STOPPED")));
          this.wasClosed = isClosed;
          this.currentDoorState.setValue(state);
-         this.targetDoorState.setValue(state);
          this.targetState = state;
        }
      }
@@ -98,7 +97,8 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
     this.targetDoorState = this.garageDoorOpener.getCharacteristic(Characteristic.TargetDoorState);
     this.targetDoorState.on('set', this.setState.bind(this));
     this.targetDoorState.on('get', this.getTargetState.bind(this));
-    var isClosed = this.isClosed();
+    var isClosed = this.hasClosedSensor() ? this.isClosed() : true;
+    this.wasClosed = isClosed;
     this.currentDoorState.setValue(isClosed ? DoorState.CLOSED : DoorState.OPEN);
     this.targetDoorState.setValue(isClosed ? DoorState.CLOSED : DoorState.OPEN);
     this.infoService = new Service.AccessoryInformation();
@@ -133,7 +133,7 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
     } else if (this.hasOpenSensor()) {
         return !this.isOpen();
     } else {
-        return this.currentDoorState.getValue() == DoorState.CLOSED;
+        return this.wasClosed;
     }
   },
 
@@ -143,7 +143,7 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
     } else if (this.hasClosedSensor()) {
         return !this.isClosed();
     } else {
-        return this.currentDoorState.getValue() == DoorState.OPEN;
+        return !this.wasClosed;
     }
   },
 
@@ -164,11 +164,10 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
     if ((this.hasClosedSensor() && this.targetState == DoorState.CLOSED && !isClosed) || (this.hasOpenSensor() && this.targetState == DoorState.OPEN && !isOpen)) {
       this.log("Was trying to " + (this.targetState == DoorState.CLOSED ? "CLOSE" : "OPEN") + " the door, but it is still " + (isClosed ? "CLOSED":"OPEN"));
       this.currentDoorState.setValue(DoorState.STOPPED);
-      this.targetDoorState.setValue(isClosed ? DoorState.CLOSED : DoorState.OPEN);
     } else {
       this.log("Set current state to " + (this.targetState == DoorState.CLOSED ? "CLOSED" : "OPEN"));
+      this.wasClosed = this.targetState == DoorState.CLOSED;
       this.currentDoorState.setValue(this.targetState);
-      this.targetDoorState.setValue(this.targetState);
     }
     this.operating = false;
   },
