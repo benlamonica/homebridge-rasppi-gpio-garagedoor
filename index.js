@@ -67,13 +67,36 @@ function RaspPiGPIOGarageDoorAccessory(log, config) {
 
 RaspPiGPIOGarageDoorAccessory.prototype = {
 
+  determineCurrentDoorState: function() {
+       if (this.isClosed()) {
+         return DoorState.CLOSED;
+       } else if (this.hasOpenSensor()) {
+         return this.isOpen() ? DoorState.OPEN : DoorState.STOPPED; 
+       } else {
+         return DoorState.OPEN;
+       }
+  },
+  
+  doorStateToString: function(state) {
+    switch (state) {
+      case DoorState.OPEN:
+        return "OPEN";
+      case DoorState.CLOSED:
+        return "CLOSED";
+      case DoorState.STOPPED:
+        return "STOPPED";
+      default:
+        return "UNKNOWN";
+    }
+  },
+
   monitorDoorState: function() {
      var isClosed = this.isClosed();
      var isOpen = this.isOpen();
      if (isClosed != this.wasClosed) {
-       var state = isClosed ? DoorState.CLOSED : ((this.hasOpenSensor() && isOpen) ? DoorState.OPEN : DoorState.STOPPED);       
+       var state = this.determineCurrentDoorState();
        if (!this.operating) {
-         this.log("Door state changed to " + (isClosed ? "CLOSED" : ((isOpen && this.hasOpenSensor()) ? "OPEN" : "STOPPED")));
+         this.log("Door state changed to " + this.doorStateToString(state));
          this.wasClosed = isClosed;
          this.currentDoorState.setValue(state);
          this.targetState = state;
