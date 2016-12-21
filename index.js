@@ -24,10 +24,12 @@ function getVal(config, key, defaultVal) {
 
 function RaspPiGPIOGarageDoorAccessory(log, config) {
   this.log = log;
-  var version = require('./package.json').version;
-  log("RaspPiGPIOGarageDoorAccessory version " + version);
+  this.version = require('./package.json').version;
+  log("RaspPiGPIOGarageDoorAccessory version " + this.version);
   this.name = config["name"];
   this.doorSwitchPin = config["doorSwitchPin"];
+  this.relayOn = getVal(config, "doorSwitchValue", 1);
+  this.relayOff = 1-this.relayOn; //opposite of relayOn (O/1)
   this.doorSwitchPressTimeInMs = getVal(config, "doorSwitchPressTimeInMs", 1000);
   this.closedDoorSensorPin = getVal(config, "closedDoorSensorPin", config["doorSensorPin"]);
   this.openDoorSensorPin = config["openDoorSensorPin"];
@@ -35,8 +37,6 @@ function RaspPiGPIOGarageDoorAccessory(log, config) {
   this.doorOpensInSeconds = config["doorOpensInSeconds"];
   this.closedDoorSensorValue = getVal(config, "closedDoorSensorValue", 1);
   this.openDoorSensorValue = getVal(config, "openDoorSensorValue", 1);
-  this.relayOn = getVal(config, "relayOnValue", 1);
-  this.relayOff = 1-this.relayOn; //opposite of relayOn (O/1)
   log("Door Switch Pin: " + this.doorSwitchPin);
   log("Door Switch Val: " + (this.relayOn == 1 ? "ACTIVE_HIGH" : "ACTIVE_LOW"));
   log("Door Switch Active Time in ms: " + this.doorSwitchPressTimeInMs);
@@ -121,21 +121,23 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
     this.targetDoorState.on('set', this.setState.bind(this));
     this.targetDoorState.on('get', this.getTargetState.bind(this));
     var isClosed = this.hasClosedSensor() ? this.isClosed() : true;
+
     this.wasClosed = isClosed;
-    this.currentDoorState.setValue(isClosed ? DoorState.CLOSED : DoorState.OPEN);
-    this.targetDoorState.setValue(isClosed ? DoorState.CLOSED : DoorState.OPEN);
+    this.operating = false;
     this.infoService = new Service.AccessoryInformation();
     this.infoService
       .setCharacteristic(Characteristic.Manufacturer, "Opensource Community")
       .setCharacteristic(Characteristic.Model, "RaspPi GPIO GarageDoor")
       .setCharacteristic(Characteristic.SerialNumber, "Version 1.0.0");
   
-    this.wasClosed = isClosed;
-    this.operating = false;
     if (this.hasOpenSensor() || this.hasClosedSensor()) {
-        this.log("monitoring door state.");
+        this.log("We have a door sensor, monitoring door state enabled.");
         setTimeout(this.monitorDoorState.bind(this), this.sensorPollInMs);
     }
+
+    this.log("Initial Door State: " + (isClosed ? "CLOSED" : "OPEN"));
+    this.currentDoorState.setValue(isClosed ? DoorState.CLOSED : DoorState.OPEN);
+    this.targetDoorState.setValue(isClosed ? DoorState.CLOSED : DoorState.OPEN);
   },
 
   getTargetState: function(callback) {
