@@ -2,10 +2,6 @@ var fs = require('fs');
 var Service, Characteristic, DoorState; // set in the module.exports, from homebridge
 var process = require('process');
 
-if (process.geteuid() != 0) {
-    throw new Error('must run homebridge as root to control gpio pins');
-}
-
 module.exports = function(homebridge) {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
@@ -26,6 +22,11 @@ function RaspPiGPIOGarageDoorAccessory(log, config) {
   this.log = log;
   this.version = require('./package.json').version;
   log("RaspPiGPIOGarageDoorAccessory version " + this.version);
+
+  if (process.geteuid() != 0) {
+    log("WARN! WARN! WARN! may not be able to control GPIO pins because not running as root!");
+  }
+
   this.name = config["name"];
   this.doorSwitchPin = config["doorSwitchPin"];
   this.relayOn = getVal(config, "doorSwitchValue", 1);
