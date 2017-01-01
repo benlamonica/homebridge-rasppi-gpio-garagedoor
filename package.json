@@ -1,6 +1,6 @@
 {
   "name": "homebridge-rasppi-gpio-garagedoor",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Exposes a garage door accessory to HomeBridge that uses a RaspberryPi GPIO pins",
   "main": "index.js",
   "scripts": {
