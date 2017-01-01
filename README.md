@@ -28,13 +28,13 @@ GPIO14 is configured as a Serial Transmit line, so avoid choosing that pin.
 
 All other pins are pulled LOW (they have a 0 volt signal, same as GND).
 
-If you relay triggers when the GPIO PIN goes LOW, then pick a PIN that starts out HIGH on reboot. If your relay triggers with the GPIO PIN goes HIGH< then pick a PIN that starts out LOW on reboot.
+If your relay triggers when the GPIO pin goes LOW, then pick a pin that starts out HIGH on reboot. If your relay triggers with the GPIO PIN goes HIGH then pick a GPIO pin that starts out LOW on reboot.
 
-(information comes from [(https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=24491)
+(information comes from https://www.raspberrypi.org/forums/viewtopic.php?f=44&t=24491)
 
-The one exception might be your pin 15, which looks like it must be GPIO14. However, this pin isn't a GPIO at startup - it's TxD, the serial transmit line - which may well be pulled high for normal TX operation. The TxD line won't become GPIO14 (and therefore go low) until you run your script that enables all 17 lines as GPIOs.
-The Raspberry PI brings certain pins HIGH and others LOW on a reboot. This can cause  
+--------------------
 
+  0. Choose the GPIO pins that you are going to use, following the above information
   1. Export the GPIO pins to be used and set their direction after reboot  
     a. Copy and edit [this start script](https://raw.githubusercontent.com/benlamonica/homebridge-rasppi-gpio-garagedoor/master/scripts/garage-door-gpio) into your ```/etc/init.d``` directory.  
     b. Change the values to be the gpio pins that you are using.  
