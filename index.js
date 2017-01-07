@@ -121,7 +121,7 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
     this.targetDoorState = this.garageDoorOpener.getCharacteristic(Characteristic.TargetDoorState);
     this.targetDoorState.on('set', this.setState.bind(this));
     this.targetDoorState.on('get', this.getTargetState.bind(this));
-    var isClosed = this.hasClosedSensor() ? this.isClosed() : true;
+    var isClosed = this.isClosed();
 
     this.wasClosed = isClosed;
     this.operating = false;
@@ -165,7 +165,7 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
 
   isOpen: function() {
     if (this.hasOpenSensor()) {
-        return this.readPin(this.closedDoorSensorPin) == this.closedDoorSensorValue;
+        return this.readPin(this.openDoorSensorPin) == this.openDoorSensorValue;
     } else if (this.hasClosedSensor()) {
         return !this.isClosed();
     } else {
@@ -187,7 +187,7 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
   setFinalDoorState: function() {
     var isClosed = this.isClosed();
     var isOpen = this.isOpen();
-    if ((this.hasClosedSensor() && this.targetState == DoorState.CLOSED && !isClosed) || (this.hasOpenSensor() && this.targetState == DoorState.OPEN && !isOpen)) {
+    if ( (this.targetState == DoorState.CLOSED && !isClosed) || (this.targetState == DoorState.OPEN && !isOpen) ) {
       this.log("Was trying to " + (this.targetState == DoorState.CLOSED ? "CLOSE" : "OPEN") + " the door, but it is still " + (isClosed ? "CLOSED":"OPEN"));
       this.currentDoorState.setValue(DoorState.STOPPED);
     } else {
