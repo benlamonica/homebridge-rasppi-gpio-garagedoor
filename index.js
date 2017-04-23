@@ -160,7 +160,7 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
   },
 
   writePin: function(pin,val) {
-    rpio.write(this.doorSwitchPin, rpio.LOW);
+    rpio.write(this.doorSwitchPin, val);
   },
 
   isClosed: function() {
