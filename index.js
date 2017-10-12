@@ -123,6 +123,15 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
     this.targetDoorState = this.garageDoorOpener.getCharacteristic(Characteristic.TargetDoorState);
     this.targetDoorState.on('set', this.setState.bind(this));
     this.targetDoorState.on('get', this.getTargetState.bind(this));
+
+    rpio.open(this.doorSwitchPin, rpio.OUTPUT, this.relayOff);
+    if (this.hasClosedSensor()) {
+      rpio.open(this.closedDoorSensorPin, rpio.INPUT);
+    }
+    if (this.hasOpenSensor()) {
+      rpio.open(this.openDoorSensorPin, rpio.INPUT);
+    }
+
     var isClosed = this.isClosed();
 
     this.wasClosed = isClosed;
@@ -141,14 +150,6 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
     this.log("Initial Door State: " + (isClosed ? "CLOSED" : "OPEN"));
     this.currentDoorState.setValue(isClosed ? DoorState.CLOSED : DoorState.OPEN);
     this.targetDoorState.setValue(isClosed ? DoorState.CLOSED : DoorState.OPEN);
-
-    rpio.open(this.doorSwitchPin, rpio.OUTPUT, this.relayOff);
-    if (this.hasClosedSensor()) {
-      rpio.open(this.closedDoorSensorPin, rpio.INPUT);
-    }
-    if (this.hasOpenSensor()) {
-      rpio.open(this.openDoorSensorPin, rpio.INPUT);
-    }
   },
 
   getTargetState: function(callback) {
