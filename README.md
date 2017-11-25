@@ -34,26 +34,23 @@ If your relay triggers when the GPIO pin goes LOW, then pick a pin that starts o
 
 --------------------
 
-  0. Choose the GPIO pins that you are going to use, following the above information
-  1. Export the GPIO pins to be used and set their direction after reboot  
-    a. Copy and edit [this start script](https://raw.githubusercontent.com/benlamonica/homebridge-rasppi-gpio-garagedoor/master/scripts/garage-door-gpio) into your ```/etc/init.d``` directory.  
-    b. Change the values to be the gpio pins that you are using.  
-    c. ```chmod 755 /etc/init.d/garage-door-gpio``` # this makes the script executable   
-    d. ```sudo update-rc.d /etc/init.d/garage-door-gpio defaults``` # this will set up the symlinks to run the script on startup.  
-    e. ```sudo /etc/init.d/garage-door-gpio start``` and verify that your pins are exported by looking in ```ls /sys/class/gpio/``` directory  
-  2. Install homebridge using: npm install -g homebridge
-  3. Install this plugin using: npm install -g homebridge-rasppi-gpio-garagedoor
-  4. Update your configuration file. See sample-config.json snippet below. 
-  5. Set up Homebridge to start automatically after reboot  
-    a. Copying the [homebridge start script](https://raw.githubusercontent.com/benlamonica/homebridge-rasppi-gpio-garagedoor/master/scripts/homebridge) into your ```/etc/init.d``` directory.  
-    b. Modify the file to start homebridge with the .homebridge directory and user that you want. Make sure that the user you are choosing to run Homebridge as has access to write to GPIO pins. On my version of Raspbian, Homebridge has to run as ```root```.   
-    c. ```chmod 755 /etc/init.d/homebridge```  
-    d. ```sudo update-rc.d /etc/init.d/homebridge defaults```  
-    e. ```sudo apt-get install apache2-utils``` # this will install rotatelog which is used in the start script so that the log can rotate and you can clean up diskspace  
-    f. ```sudo /etc/init.d/homebridge start``` and verify that it is running. Logs are located at ~pi/.homebridge/  
-
+  1. Install the following software: (assuming you are using debian stretch or later)
+    a. sudo apt-get install libavahi-client-dev nodejs-legacy nodejs npm
+    b. sudo npm install -g --unsafe-perf homebridge
+    c. sudo npm install homebridge-rasppi-gpio-garagedoor -g
+  2. Choose the GPIO pins that you are going to use, following the above information
+  3. Configure the system:
+    a. Create the /var/lib/homebridge directory
+    b. Copy the files from the [scripts/var/lib/homebridge directory](https://github.com/benlamonica/homebridge-rasppi-gpio-garagedoor/tree/master/scripts/) into appropriate locations; scripts/etc/default/homebridge => /etc/default/homebridge, scripts/etc/systemd/system/homebridge.service => /etc/systemd/system/homebridge.service, scripts/etc/var/lib/homebridge/garage-door-gpio => /var/lib/homebridge/garage-door-gpio
+    c. Create the config.json to control homebridge at /var/lib/homebridge/config.json. Here is a sample of a config for [two garage doors](https://raw.githubusercontent.com/benlamonica/homebridge-rasppi-gpio-garagedoor/master/scripts/var/lib/homebridge/config-sample-two-doors.json).
+  4. Run the following commands to enable homebridge
+    a. sudo systemctl daemon-reload
+    b. sudo systemctl enable homebridge
+    c. sudo systemctl start homebridge
 
 # Configuration
+
+You will need to add the following accessory configuration to the Homebridge [config.json](https://github.com/nfarina/homebridge/blob/master/config-sample.json)
 
 Configuration sample:
 
@@ -83,8 +80,8 @@ Fields:
 * doorSwitchValue - 1 = ACTIVE_HIGH, 0 = ACTIVE_LOW, defaults to 1 if not specified. Set to 0 if you have a relay that requires the signal to be 0v to trigger.
 * closedDoorSensorPin - The physical GPIO pin that senses if the door is closed, do not specify if no sensor present
 * closedDoorSensorValue - 1 = ACTIVE_HIGH, 0 = ACTIVE_LOW, defaults to 1 if not specified
-* openDoorSensorPin - The physical GPIO pin that senses if the door is open, do not specify if no sensor present
-* openDoorSensorValue - 1 = ACTIVE_HIGH, 0 = ACTIVE_LOW, defaults to 1 if not specified
+* openDoorSensorPin - **OPTIONAL** Omit line if you don't have an open sensor. The physical GPIO pin that senses if the door is open, do not specify if no sensor present
+* openDoorSensorValue - **OPTIONAL** Omit line if you don't have an open sensor.  1 = ACTIVE_HIGH, 0 = ACTIVE_LOW, defaults to 1 if not specified
 * doorPollInMs - Number of milliseconds to wait before polling the doorSensorPin to report if the door is open or closed
 * doorOpensInSeconds - Number of seconds it takes your garage door to open or close (err on the side of being longer than it actually takes)
 
