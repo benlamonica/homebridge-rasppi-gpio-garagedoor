@@ -1,0 +1,36 @@
+{
+    "bridge": {
+        "name": "Garage",
+        "username": "01:23:45:67:89:AB",
+        "port": 51826,
+        "pin": "123-45-678"
+    },
+
+    "description": "Garage Door HomeBridge Config, please file bugs at https://github.com/benlamonica/homebridge-rasppi-gpio-garagedoor/issues/new",
+
+    "note":"The below accessories show how you can configure 2 garage doors at once. If you only have 1 garage door, remove one of the below blocks. The below config is the bare minimum configuration needed. You can configure other options (see the README.md for more detail)",
+
+    "accessories": [{
+        "accessory": "RaspPiGPIOGarageDoor",
+        "name": "Large Garage Door",
+        "doorSwitchPin": 5,
+        "doorSwitchPressTimeInMs": 1500,
+        "doorSwitchValue": 1,
+        "closedDoorSensorPin": 20,
+        "closedDoorSensorValue": 1,
+        "doorPollInMs": 4000,
+        "doorOpensInSeconds": 14
+    }, {
+        "accessory": "RaspPiGPIOGarageDoor",
+        "name": "Small Garage Door",
+        "doorSwitchPin": 6,
+        "doorSwitchPressTimeInMs": 1500,
+        "doorSwitchValue": 1,
+        "closedDoorSensorPin": 21,
+        "closedDoorSensorValue": 1,
+        "doorPollInMs": 4000,
+        "doorOpensInSeconds": 14
+    }],
+
+    "platforms": []
+}

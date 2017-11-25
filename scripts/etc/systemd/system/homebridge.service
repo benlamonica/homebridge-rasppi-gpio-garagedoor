@@ -1,0 +1,20 @@
+[Unit]
+Description=Node.js HomeKit Server 
+After=syslog.target network-online.target
+
+[Service]
+Type=simple
+User=pi
+EnvironmentFile=/etc/default/homebridge
+# Adapt this to your specific setup (could be /usr/bin/homebridge)
+# See comments below for more information
+ExecStart=/usr/local/bin/homebridge $HOMEBRIDGE_OPTS
+Restart=on-failure
+RestartSec=10
+KillMode=process
+PermissionsStartOnly=true
+ExecStartPre=/var/lib/homebridge/garage-door-gpio start
+ExecStopPost=/var/lib/homebridge/garage-door-gpio stop
+
+[Install]
+WantedBy=multi-user.target

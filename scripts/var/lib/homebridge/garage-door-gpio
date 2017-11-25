@@ -1,0 +1,48 @@
+#!/bin/bash 
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DESC="Enable GPIO for the Garage Door Module"
+NAME="garage-door-gpio"
+SCRIPTNAME=/etc/init.d/$NAME
+
+. /lib/lsb/init-functions
+
+function export_pin {
+  if [ ! -e /sys/class/gpio/gpio${1} ] ; then
+    echo $1 > /sys/class/gpio/export
+    if [ "$3" == "low" ] ; then
+      echo 1 > /sys/class/gpio/gpio${1}/active_low
+    else
+      echo 0 > /sys/class/gpio/gpio${1}/active_low
+    fi
+    echo $2 > /sys/class/gpio/gpio${1}/direction
+    if [ "$2" == "out" ] ; then
+      echo $4 > /sys/class/gpio/gpio${1}/value
+    fi
+  fi
+}
+
+function unexport_pin {
+  if [ -e /sys/class/gpio/gpio${1} ] ; then
+    echo $1 > /sys/class/gpio/unexport
+  fi
+}
+
+if [ "$1" == "start" ] ; then
+  log_daemon_msg "Enabling Garage Door GPIO pins for door 0"
+  export_pin 5 out low 0 
+  export_pin 20 in high 0
+  log_end_msg 0
+
+  log_daemon_msg "Enabling Garage Door GPIO pins for door 1"
+  export_pin 6 out low 0
+  export_pin 21 in high 0
+  log_end_msg 0
+else [ "$1" == "stop" ]  
+  log_daemon_msg "Disabling Garage Door GPIO pins for door 0"
+  unexport_pin 5
+  unexport_pin 20
+
+  log_daemon_msg "Disabling Garage Door GPIO pins for door 1"
+  unexport_pin 6
+  unexport_pin 21
+fi

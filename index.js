@@ -1,19 +1,22 @@
-var fs = require('fs');
-var Service, Characteristic, DoorState; // set in the module.exports, from homebridge
+/* jshint node: true */
+"use strict";
+var Service;
+var Characteristic;
+var DoorState;
 var process = require('process');
-const rpio = require('rpio');
-
+var rpio = require('rpio');
+        
 module.exports = function(homebridge) {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
   DoorState = homebridge.hap.Characteristic.CurrentDoorState;
 
   homebridge.registerAccessory("homebridge-rasppi-gpio-garagedoor", "RaspPiGPIOGarageDoor", RaspPiGPIOGarageDoorAccessory);
-}
+};
 
 function getVal(config, key, defaultVal) {
     var val = config[key];
-    if (val == null) {
+    if (val === null) {
         return defaultVal;
     }
     return val;
@@ -24,19 +27,19 @@ function RaspPiGPIOGarageDoorAccessory(log, config) {
   this.version = require('./package.json').version;
   log("RaspPiGPIOGarageDoorAccessory version " + this.version);
 
-  if (process.geteuid() != 0) {
+  if (process.geteuid() !== 0) {
     log("WARN! WARN! WARN! may not be able to control GPIO pins because not running as root!");
   }
 
-  this.name = config["name"];
-  this.doorSwitchPin = config["doorSwitchPin"];
+  this.name = config.name;
+  this.doorSwitchPin = config.doorSwitchPin;
   this.relayOn = getVal(config, "doorSwitchValue", 1);
   this.relayOff = 1-this.relayOn; //opposite of relayOn (O/1)
   this.doorSwitchPressTimeInMs = getVal(config, "doorSwitchPressTimeInMs", 1000);
-  this.closedDoorSensorPin = getVal(config, "closedDoorSensorPin", config["doorSensorPin"]);
-  this.openDoorSensorPin = config["openDoorSensorPin"];
+  this.closedDoorSensorPin = getVal(config, "closedDoorSensorPin", config.doorSensorPin);
+  this.openDoorSensorPin = config.openDoorSensorPin;
   this.sensorPollInMs = getVal(config, "doorPollInMs", 4000);
-  this.doorOpensInSeconds = config["doorOpensInSeconds"];
+  this.doorOpensInSeconds = config.doorOpensInSeconds;
   this.closedDoorSensorValue = getVal(config, "closedDoorSensorValue", 1);
   this.openDoorSensorValue = getVal(config, "openDoorSensorValue", 1);
   log("Door Switch Pin: " + this.doorSwitchPin);
@@ -95,13 +98,12 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
 
   monitorDoorState: function() {
      var isClosed = this.isClosed();
-     var isOpen = this.isOpen();
      if (isClosed != this.wasClosed) {
        var state = this.determineCurrentDoorState();
        if (!this.operating) {
          this.log("Door state changed to " + this.doorStateToString(state));
          this.wasClosed = isClosed;
-         this.currentDoorState.setValue(state);
+         this.currentDoorState.updateValue(state);
          this.targetState = state;
        }
      }
@@ -109,11 +111,11 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
   },
 
   hasOpenSensor : function() {
-    return this.openDoorSensorPin != null;
+    return this.openDoorSensorPin !== null;
   },
 
   hasClosedSensor : function() {
-    return this.closedDoorSensorPin != null;
+    return this.closedDoorSensorPin !== null;
   },
 
   initService: function() {
@@ -139,8 +141,8 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
     }
 
     this.log("Initial Door State: " + (isClosed ? "CLOSED" : "OPEN"));
-    this.currentDoorState.setValue(isClosed ? DoorState.CLOSED : DoorState.OPEN);
-    this.targetDoorState.setValue(isClosed ? DoorState.CLOSED : DoorState.OPEN);
+    this.currentDoorState.updateValue(isClosed ? DoorState.CLOSED : DoorState.OPEN);
+    this.targetDoorState.updateValue(isClosed ? DoorState.CLOSED : DoorState.OPEN);
 
     rpio.open(this.doorSwitchPin, rpio.OUTPUT, this.relayOff);
     if (this.hasClosedSensor()) {
@@ -195,20 +197,21 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
   },
 
   setFinalDoorState: function() {
+    var isClosed, isOpen;
     if (!this.hasClosedSensor() && !this.hasOpenSensor()) {
-      var isClosed = !this.isClosed();
-      var isOpen = this.isClosed();
+      isClosed = !this.isClosed();
+      isOpen = this.isClosed();
     } else {
-      var isClosed = this.isClosed();
-      var isOpen = this.isOpen();
+      isClosed = this.isClosed();
+      isOpen = this.isOpen();
     }
     if ( (this.targetState == DoorState.CLOSED && !isClosed) || (this.targetState == DoorState.OPEN && !isOpen) ) {
       this.log("Was trying to " + (this.targetState == DoorState.CLOSED ? "CLOSE" : "OPEN") + " the door, but it is still " + (isClosed ? "CLOSED":"OPEN"));
-      this.currentDoorState.setValue(DoorState.STOPPED);
+      this.currentDoorState.updateValue(DoorState.STOPPED);
     } else {
       this.log("Set current state to " + (this.targetState == DoorState.CLOSED ? "CLOSED" : "OPEN"));
       this.wasClosed = this.targetState == DoorState.CLOSED;
-      this.currentDoorState.setValue(this.targetState);
+      this.currentDoorState.updateValue(this.targetState);
     }
     this.operating = false;
   },
@@ -221,12 +224,12 @@ RaspPiGPIOGarageDoorAccessory.prototype = {
         this.log("Triggering GarageDoor Relay");
         this.operating = true;
         if (state == DoorState.OPEN) {
-            this.currentDoorState.setValue(DoorState.OPENING);
+            this.currentDoorState.updateValue(DoorState.OPENING);
         } else {
-            this.currentDoorState.setValue(DoorState.CLOSING);
+            this.currentDoorState.updateValue(DoorState.CLOSING);
         }
-	setTimeout(this.setFinalDoorState.bind(this), this.doorOpensInSeconds * 1000);
-	this.switchOn();
+	     setTimeout(this.setFinalDoorState.bind(this), this.doorOpensInSeconds * 1000);
+	     this.switchOn();
     }
 
     callback();
