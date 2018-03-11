@@ -35,21 +35,21 @@ If your relay triggers when the GPIO pin goes LOW, then pick a pin that starts o
 --------------------
 
 1. Install the following software: (assuming you are using debian stretch or later)
-  1. sudo apt-get install libavahi-client-dev nodejs-legacy nodejs npm
-  2. sudo npm install -g --unsafe-perf homebridge
-  3. sudo npm install homebridge-rasppi-gpio-garagedoor -g
+   1. sudo apt-get install libavahi-client-dev nodejs-legacy nodejs npm
+   2. sudo npm install -g --unsafe-perf homebridge
+   3. sudo npm install homebridge-rasppi-gpio-garagedoor -g
 2. Choose the GPIO pins that you are going to use, following the above information
 3. Configure the system:
-  1. Create the /var/lib/homebridge directory
-  2. Copy the files from the [scripts/var/lib/homebridge directory](https://github.com/benlamonica/homebridge-rasppi-gpio-garagedoor/tree/master/scripts/) into appropriate locations; 
-    * scripts/etc/default/homebridge => /etc/default/homebridge
-    * scripts/etc/systemd/system/homebridge.service => /etc/systemd/system/homebridge.service
-    * scripts/etc/var/lib/homebridge/garage-door-gpio => /var/lib/homebridge/garage-door-gpio
-  3. Create the config.json to control homebridge at /var/lib/homebridge/config.json. Here is a sample of a config for [two garage doors](https://raw.githubusercontent.com/benlamonica/homebridge-rasppi-gpio-garagedoor/master/scripts/var/lib/homebridge/config-sample-two-doors.json).
+   1. Create the /var/lib/homebridge directory
+   2. Copy the files from the [scripts/var/lib/homebridge directory](https://github.com/benlamonica/homebridge-rasppi-gpio-garagedoor/tree/master/scripts/) into appropriate locations; 
+      * scripts/etc/default/homebridge => /etc/default/homebridge
+      * scripts/etc/systemd/system/homebridge.service => /etc/systemd/system/homebridge.service
+      * scripts/etc/var/lib/homebridge/garage-door-gpio => /var/lib/homebridge/garage-door-gpio
+   3. Create the config.json to control homebridge at /var/lib/homebridge/config.json. Here is a sample of a config for [two garage doors](https://raw.githubusercontent.com/benlamonica/homebridge-rasppi-gpio-garagedoor/master/scripts/var/lib/homebridge/config-sample-two-doors.json).
 4. Run the following commands to enable homebridge
-  1. sudo systemctl daemon-reload
-  2. sudo systemctl enable homebridge
-  3. sudo systemctl start homebridge
+   1. sudo systemctl daemon-reload
+   2. sudo systemctl enable homebridge
+   3. sudo systemctl start homebridge
 
 # Configuration
 
